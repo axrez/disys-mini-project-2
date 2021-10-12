@@ -6,7 +6,7 @@ option go_package = "github.com/axrez/disys-mini-project-2";
 service ChittyChat {
     rpc Publish (PublishMessage) returns (EmptyReturn);
     rpc Broadcast (BroadcastMessage) returns (EmptyReturn);
-    rpc Join (JoinMessage) returns (EmptyReturn);
+    rpc Join (JoinMessage) returns (JoinReplyMessage);
     rpc Leave (LeaveMessage) returns (EmptyReturn);
 }
 

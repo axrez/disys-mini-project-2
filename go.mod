@@ -1,4 +1,4 @@
-module project/chittychat
+module github.com/axrez/mini-project-2
 
 go 1.17
 
