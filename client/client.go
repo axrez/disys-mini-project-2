@@ -20,11 +20,11 @@ func JoinChat (c pb.ChittyChatClient, ctx context.Context, name string, lTime in
 		Name: name,
 		LTime: lTime,
 	}
-	_, err := c.Join(ctx, message)
+	r, err := c.Join(ctx, message)
 	if err != nil {
 		log.Fatalf("%s failed to join: %v", name, err)
 	}
-	return Participant{Id: 1, Name: name}
+	return Participant{Id: r.GetId(), Name: r.GetName()}
 }
 
 func Welcome() string {
