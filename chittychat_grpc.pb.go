@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ChittyChatClient interface {
 	Publish(ctx context.Context, in *PublishMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
 	Broadcast(ctx context.Context, in *BroadcastMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
-	Join(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
+	Join(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (*JoinReplyMessage, error)
 	Leave(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
 }
 
@@ -50,8 +50,8 @@ func (c *chittyChatClient) Broadcast(ctx context.Context, in *BroadcastMessage, 
 	return out, nil
 }
 
-func (c *chittyChatClient) Join(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (*EmptyReturn, error) {
-	out := new(EmptyReturn)
+func (c *chittyChatClient) Join(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (*JoinReplyMessage, error) {
+	out := new(JoinReplyMessage)
 	err := c.cc.Invoke(ctx, "/main.ChittyChat/Join", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (c *chittyChatClient) Leave(ctx context.Context, in *LeaveMessage, opts ...
 type ChittyChatServer interface {
 	Publish(context.Context, *PublishMessage) (*EmptyReturn, error)
 	Broadcast(context.Context, *BroadcastMessage) (*EmptyReturn, error)
-	Join(context.Context, *JoinMessage) (*EmptyReturn, error)
+	Join(context.Context, *JoinMessage) (*JoinReplyMessage, error)
 	Leave(context.Context, *LeaveMessage) (*EmptyReturn, error)
 	mustEmbedUnimplementedChittyChatServer()
 }
@@ -89,7 +89,7 @@ func (UnimplementedChittyChatServer) Publish(context.Context, *PublishMessage) (
 func (UnimplementedChittyChatServer) Broadcast(context.Context, *BroadcastMessage) (*EmptyReturn, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Broadcast not implemented")
 }
-func (UnimplementedChittyChatServer) Join(context.Context, *JoinMessage) (*EmptyReturn, error) {
+func (UnimplementedChittyChatServer) Join(context.Context, *JoinMessage) (*JoinReplyMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
 func (UnimplementedChittyChatServer) Leave(context.Context, *LeaveMessage) (*EmptyReturn, error) {
