@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"time"
 	"fmt"
-	"log"
 	pb "github.com/axrez/disys-mini-project-2"
 	"google.golang.org/grpc"
+	"log"
+	"time"
 )
 
 type Participant struct {
@@ -36,13 +36,14 @@ func main() {
 
 	fmt.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
 
-	go Chat(c, ctx, lTime)
-	for true {}
+	go Chat(c, ctx, p, lTime)
+	for true {
+	}
 }
 
-func JoinChat (c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant{
+func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant {
 	message := &pb.JoinMessage{
-		Name: name,
+		Name:  name,
 		LTime: lTime,
 	}
 	r, err := c.Join(ctx, message)
@@ -69,7 +70,7 @@ func GetParicipantTextMessage() string {
 func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, lTime int32) {
 	message := &pb.PublishMessage{
 		Message: textMessage,
-		LTime: lTime,
+		LTime:   lTime,
 	}
 	_, err := c.Publish(ctx, message)
 	if err != nil {
@@ -77,9 +78,24 @@ func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage stri
 	}
 }
 
-func Chat(c pb.ChittyChatClient, ctx context.Context, lTime int32) {
+func LeaveChat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) {
+	message := &pb.LeaveMessage{
+		Id:    string(p.Id),
+		LTime: lTime,
+	}
+	_, err := c.Leave(ctx, message)
+	if err != nil {
+		log.Fatalf("%s failed to leave chat: %v", p.Name, err)
+	}
+}
+
+func Chat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) {
 	for true {
 		text := GetParicipantTextMessage()
-		PublishMessage(c, ctx, text, lTime)
+		if text == "\\leave" {
+			LeaveChat(c, ctx, p, lTime)
+		} else {
+			PublishMessage(c, ctx, text, lTime)
+		}
 	}
 }
