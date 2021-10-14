@@ -20,7 +20,7 @@ type server struct {
 
 func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMessage, error) {
 	utils.CalcNextLTime(&s.lTime, &in.LTime)
-	return &pb.JoinReplyMessage{Id: 1, Name: "HardCoded", LTime: s.lTime}, nil
+	return &pb.JoinReplyMessage{Id: 1, Name: in.GetName(), LTime: s.lTime}, nil
 }
 
 func main() {
