@@ -34,7 +34,7 @@ func main() {
 
 	p := JoinChat(c, ctx, name, lTime)
 
-	fmt.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
+	log.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
 
 	go Chat(c, ctx, p, lTime)
 	for true {
