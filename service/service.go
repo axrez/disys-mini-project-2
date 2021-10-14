@@ -5,10 +5,10 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/axrez/mini-project-2"
+	pb "github.com/axrez/disys-mini-project-2"
 	"google.golang.org/grpc"
 
-	utils "github.com/axrez/mini-project-2/utils"
+	utils "github.com/axrez/disys-mini-project-2/utils"
 )
 
 const port = ":50051"

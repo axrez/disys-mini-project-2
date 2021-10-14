@@ -1,4 +1,4 @@
-module github.com/axrez/mini-project-2
+module github.com/axrez/disys-mini-project-2
 
 go 1.17
 
