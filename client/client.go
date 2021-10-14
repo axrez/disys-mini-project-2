@@ -34,7 +34,10 @@ func main() {
 
 	p := JoinChat(c, ctx, name, lTime)
 
-	fmt.Printf("Participant received with ID: %d and Name: %s", p.Id, p.Name)
+	fmt.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
+
+	go Chat(c, ctx, lTime)
+	for true {}
 }
 
 func JoinChat (c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant{
@@ -54,4 +57,29 @@ func GetParticipantName() string {
 	fmt.Print("Please type your name: ")
 	fmt.Scanln(&name)
 	return name
+}
+
+func GetParicipantTextMessage() string {
+	var textMessage string
+	fmt.Print("Please type a message: ")
+	fmt.Scanln(&textMessage)
+	return textMessage
+}
+
+func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, lTime int32) {
+	message := &pb.PublishMessage{
+		Message: textMessage,
+		LTime: lTime,
+	}
+	_, err := c.Publish(ctx, message)
+	if err != nil {
+		log.Fatalf("Failed to publish message: %v", err)
+	}
+}
+
+func Chat(c pb.ChittyChatClient, ctx context.Context, lTime int32) {
+	for true {
+		text := GetParicipantTextMessage()
+		PublishMessage(c, ctx, text, lTime)
+	}
 }
