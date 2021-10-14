@@ -37,7 +37,7 @@ func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMes
 	return &pb.JoinReplyMessage{Id: 1, Name: in.GetName(), LTime: s.lTime}, nil
 }
 
-func (s *server) Subscribe(in *pb.SubscribeInputMessasge, stream pb.ChittyChat_SubscribeServer) error {
+func (s *server) Subscribe(in *pb.SubscribeMessage, stream pb.ChittyChat_SubscribeServer) error {
 	part := s.participants[int(in.GetId())]
 	part.messageStream = stream
 

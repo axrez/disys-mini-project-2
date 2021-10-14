@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"time"
 
 	pb "github.com/axrez/disys-mini-project-2"
 	"google.golang.org/grpc"
-	"log"
-	"time"
 )
 
 type Participant struct {
@@ -40,20 +39,9 @@ func main() {
 	log.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
 
 	go Chat(c, ctx, p, lTime)
+	go Listen(SubscribeChat(c, ctx, p, 1))
 	for true {
 	}
-}
-
-func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant {
-	message := &pb.JoinMessage{
-		Name:  name,
-		LTime: lTime,
-	}
-	r, err := c.Join(ctx, message)
-	if err != nil {
-		log.Fatalf("%s failed to join: %v", name, err)
-	}
-	return Participant{Id: r.GetId(), Name: r.GetName()}
 }
 
 func GetParticipantName() string {
@@ -70,9 +58,36 @@ func GetParicipantTextMessage() string {
 	return textMessage
 }
 
-func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, lTime int32) {
+func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant {
+	message := &pb.JoinMessage{
+		Name:  name,
+		LTime: lTime,
+	}
+	r, err := c.Join(ctx, message)
+	if err != nil {
+		log.Fatalf("%s failed to join: %v", name, err)
+	}
+	return Participant{Id: r.GetId(), Name: r.GetName()}
+}
+
+func SubscribeChat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) pb.ChittyChat_SubscribeClient {
+	message := &pb.SubscribeMessage{
+		Id:    p.Id,
+		LTime: lTime,
+	}
+	stream, err := c.Subscribe(ctx, message)
+	if err != nil {
+		log.Fatalf("%s failed to subscribe to chat: %v", p.Name, err)
+	}
+
+	return stream
+
+}
+
+func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, p Participant, lTime int32) {
 	message := &pb.PublishMessage{
 		Message: textMessage,
+		Id:      p.Id,
 		LTime:   lTime,
 	}
 	_, err := c.Publish(ctx, message)
@@ -98,7 +113,20 @@ func Chat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32
 		if text == "\\leave" {
 			LeaveChat(c, ctx, p, lTime)
 		} else {
-			PublishMessage(c, ctx, text, lTime)
+			PublishMessage(c, ctx, text, p, lTime)
 		}
+	}
+}
+
+func Listen(stream pb.ChittyChat_SubscribeClient) {
+	for true {
+		message, err := stream.Recv()
+		if err == io.EOF {
+			time.Sleep(1 * time.Second)
+		} else if err != nil {
+			log.Fatalf("Failed to receive message: %v", err)
+
+		}
+		log.Println(message.Message)
 	}
 }
