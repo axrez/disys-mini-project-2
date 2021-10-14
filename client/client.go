@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"time"
 	"fmt"
 	"log"
+	"time"
+
 	pb "github.com/axrez/disys-mini-project-2"
 	"google.golang.org/grpc"
 )
@@ -37,9 +38,9 @@ func main() {
 	fmt.Printf("Participant received with ID: %d and Name: %s", p.Id, p.Name)
 }
 
-func JoinChat (c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant{
+func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant {
 	message := &pb.JoinMessage{
-		Name: name,
+		Name:  name,
 		LTime: lTime,
 	}
 	r, err := c.Join(ctx, message)

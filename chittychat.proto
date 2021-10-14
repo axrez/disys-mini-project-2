@@ -5,19 +5,24 @@ option go_package = "github.com/axrez/disys-mini-project-2";
 
 service ChittyChat {
     rpc Publish (PublishMessage) returns (EmptyReturn);
-    rpc Broadcast (BroadcastMessage) returns (EmptyReturn);
+    rpc Subscribe (SubscribeInputMessasge) returns (stream BroadcastMessage);
     rpc Join (JoinMessage) returns (JoinReplyMessage);
     rpc Leave (LeaveMessage) returns (EmptyReturn);
 }
 
 message PublishMessage {
     string message = 1;
-    int32 lTime = 2;
+    int32 id = 2;
+    int32 lTime = 3;
 }
 
 message BroadcastMessage {
     string message = 1;
     int32 lTime = 2;
+}
+
+message SubscribeInputMessasge {
+    int32 id = 1;
 }
 
 message JoinMessage {
