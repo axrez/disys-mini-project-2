@@ -80,7 +80,7 @@ func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage stri
 
 func LeaveChat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) {
 	message := &pb.LeaveMessage{
-		Id:    string(p.Id),
+		Id:    p.Id,
 		LTime: lTime,
 	}
 	_, err := c.Leave(ctx, message)
