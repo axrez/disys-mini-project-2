@@ -30,7 +30,7 @@ func main() {
 	defer conn.Close()
 	c := pb.NewChittyChatClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
 
@@ -38,8 +38,8 @@ func main() {
 
 	log.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
 
-	go Chat(c, ctx, p, lTime)
 	go Listen(SubscribeChat(c, ctx, p, 1))
+	go Chat(c, ctx, p, lTime)
 	for true {
 	}
 }
@@ -125,8 +125,9 @@ func Listen(stream pb.ChittyChat_SubscribeClient) {
 			time.Sleep(1 * time.Second)
 		} else if err != nil {
 			log.Fatalf("Failed to receive message: %v", err)
-
 		}
-		log.Println(message.Message)
+		if message != nil {
+			log.Println(message.Message)
+		}
 	}
 }
