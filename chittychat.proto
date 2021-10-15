@@ -1,11 +1,11 @@
 syntax = "proto3";
 package main;
 
-option go_package = "github.com/axrez/disys-mini-project-2";
+option go_package = "github.com/axrez/disys-mini-project-2;disys_mini_project_2";
 
 service ChittyChat {
     rpc Publish (PublishMessage) returns (EmptyReturn);
-    rpc Subscribe (SubscribeInputMessasge) returns (stream BroadcastMessage);
+    rpc Subscribe (SubscribeMessage) returns (stream BroadcastMessage);
     rpc Join (JoinMessage) returns (JoinReplyMessage);
     rpc Leave (LeaveMessage) returns (EmptyReturn);
 }
@@ -21,8 +21,9 @@ message BroadcastMessage {
     int32 lTime = 2;
 }
 
-message SubscribeInputMessasge {
+message SubscribeMessage {
     int32 id = 1;
+    int32 lTime = 2;
 }
 
 message JoinMessage {

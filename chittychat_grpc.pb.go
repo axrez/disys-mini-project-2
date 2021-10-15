@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChittyChatClient interface {
 	Publish(ctx context.Context, in *PublishMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
-	Subscribe(ctx context.Context, in *SubscribeInputMessasge, opts ...grpc.CallOption) (ChittyChat_SubscribeClient, error)
+	Subscribe(ctx context.Context, in *SubscribeMessage, opts ...grpc.CallOption) (ChittyChat_SubscribeClient, error)
 	Join(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (*JoinReplyMessage, error)
 	Leave(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
 }
@@ -41,7 +41,7 @@ func (c *chittyChatClient) Publish(ctx context.Context, in *PublishMessage, opts
 	return out, nil
 }
 
-func (c *chittyChatClient) Subscribe(ctx context.Context, in *SubscribeInputMessasge, opts ...grpc.CallOption) (ChittyChat_SubscribeClient, error) {
+func (c *chittyChatClient) Subscribe(ctx context.Context, in *SubscribeMessage, opts ...grpc.CallOption) (ChittyChat_SubscribeClient, error) {
 	stream, err := c.cc.NewStream(ctx, &ChittyChat_ServiceDesc.Streams[0], "/main.ChittyChat/Subscribe", opts...)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (c *chittyChatClient) Leave(ctx context.Context, in *LeaveMessage, opts ...
 // for forward compatibility
 type ChittyChatServer interface {
 	Publish(context.Context, *PublishMessage) (*EmptyReturn, error)
-	Subscribe(*SubscribeInputMessasge, ChittyChat_SubscribeServer) error
+	Subscribe(*SubscribeMessage, ChittyChat_SubscribeServer) error
 	Join(context.Context, *JoinMessage) (*JoinReplyMessage, error)
 	Leave(context.Context, *LeaveMessage) (*EmptyReturn, error)
 	mustEmbedUnimplementedChittyChatServer()
@@ -109,7 +109,7 @@ type UnimplementedChittyChatServer struct {
 func (UnimplementedChittyChatServer) Publish(context.Context, *PublishMessage) (*EmptyReturn, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
-func (UnimplementedChittyChatServer) Subscribe(*SubscribeInputMessasge, ChittyChat_SubscribeServer) error {
+func (UnimplementedChittyChatServer) Subscribe(*SubscribeMessage, ChittyChat_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
 func (UnimplementedChittyChatServer) Join(context.Context, *JoinMessage) (*JoinReplyMessage, error) {
@@ -150,7 +150,7 @@ func _ChittyChat_Publish_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _ChittyChat_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SubscribeInputMessasge)
+	m := new(SubscribeMessage)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}

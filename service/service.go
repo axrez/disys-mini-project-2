@@ -13,9 +13,14 @@ import (
 
 const port = ":50051"
 
+type streamWrapper struct {
+	messageStream grpc.ServerStream
+	error chan error
+} 
+
 type participant struct {
 	name          string
-	messageStream grpc.ServerStream
+	streamWrap *streamWrapper
 }
 
 type server struct {
@@ -31,23 +36,30 @@ func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMes
 
 	s.participants[newId] = participant{
 		name:          in.GetName(),
-		messageStream: nil,
+		streamWrap: &streamWrapper{
+			messageStream: nil,
+			error: nil,
+		},
 	}
 
-	return &pb.JoinReplyMessage{Id: 1, Name: in.GetName(), LTime: s.lTime}, nil
+	return &pb.JoinReplyMessage{Id: int32(newId), Name: in.GetName(), LTime: s.lTime}, nil
 }
 
-func (s *server) Subscribe(in *pb.SubscribeInputMessasge, stream pb.ChittyChat_SubscribeServer) error {
+func (s *server) Subscribe(in *pb.SubscribeMessage, stream pb.ChittyChat_SubscribeServer) error {
+	streamWrap := streamWrapper {
+		messageStream: stream,
+			error: make(chan error),
+		}
 	part := s.participants[int(in.GetId())]
-	part.messageStream = stream
-
-	return nil
+	part.streamWrap = &streamWrap
+	s.participants[int(in.GetId())] = part
+	return <- streamWrap.error
 }
 
 func (s *server) Publish(ctx context.Context, in *pb.PublishMessage) (*pb.EmptyReturn, error) {
 	for _, part := range s.participants {
-		if part.messageStream != nil {
-			part.messageStream.SendMsg(pb.BroadcastMessage{Message: in.GetMessage(), LTime: 0})
+		if part.streamWrap.messageStream != nil {
+			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: in.GetMessage(), LTime: 0})
 		}
 	}
 
