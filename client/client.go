@@ -7,7 +7,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	pb "github.com/axrez/disys-mini-project-2"
@@ -44,6 +46,7 @@ func main() {
 	log.Println("Welcome to chittychat! Write '\\leave' to leave the chat")
 	log.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
 
+	SetupCloseHandler(c, ctx, p, lTime)
 	go Listen(SubscribeChat(c, ctx, p, 1))
 	Chat(c, ctx, p, lTime, reader)
 }
@@ -92,7 +95,6 @@ func SubscribeChat(c pb.ChittyChatClient, ctx context.Context, p Participant, lT
 	}
 
 	return stream
-
 }
 
 func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, p Participant, lTime int32) {
@@ -142,4 +144,13 @@ func Listen(stream pb.ChittyChat_SubscribeClient) {
 			log.Println(message.Message)
 		}
 	}
+}
+
+func SetupCloseHandler(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) {
+	channel := make(chan os.Signal)
+	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-channel
+		LeaveChat(c, ctx, p, lTime)
+	}()
 }
