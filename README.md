@@ -3,7 +3,7 @@
 todo:
 
 - [x] `ctrl-c` handling
-- [ ] Prompt?
+- [x] ~~Prompt?~~
 - [ ] Clocks
 - [x] Ouptut server logs into file
 - [ ] Docker?!?
