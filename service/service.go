@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 
@@ -15,11 +16,11 @@ const port = ":50051"
 
 type streamWrapper struct {
 	messageStream grpc.ServerStream
-	error chan error
-} 
+	error         chan error
+}
 
 type participant struct {
-	name          string
+	name       string
 	streamWrap *streamWrapper
 }
 
@@ -35,31 +36,59 @@ func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMes
 	newId := len(s.participants)
 
 	s.participants[newId] = participant{
-		name:          in.GetName(),
+		name: in.GetName(),
 		streamWrap: &streamWrapper{
 			messageStream: nil,
-			error: nil,
+			error:         nil,
 		},
 	}
 
+	message := fmt.Sprintf("> %s - Joined the chat", in.GetName())
+	log.Println(message)
+
+	for _, part := range s.participants {
+		if part.streamWrap.messageStream != nil {
+			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: message, LTime: 0})
+		}
+	}
 	return &pb.JoinReplyMessage{Id: int32(newId), Name: in.GetName(), LTime: s.lTime}, nil
 }
 
 func (s *server) Subscribe(in *pb.SubscribeMessage, stream pb.ChittyChat_SubscribeServer) error {
-	streamWrap := streamWrapper {
+	streamWrap := streamWrapper{
 		messageStream: stream,
-			error: make(chan error),
-		}
+		error:         make(chan error),
+	}
 	part := s.participants[int(in.GetId())]
 	part.streamWrap = &streamWrap
 	s.participants[int(in.GetId())] = part
-	return <- streamWrap.error
+	return <-streamWrap.error
 }
 
 func (s *server) Publish(ctx context.Context, in *pb.PublishMessage) (*pb.EmptyReturn, error) {
 	for _, part := range s.participants {
 		if part.streamWrap.messageStream != nil {
 			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: in.GetMessage(), LTime: 0})
+		}
+	}
+
+	log.Printf("%s: %s", s.participants[int(in.Id)].name, in.GetMessage())
+
+	return &pb.EmptyReturn{}, nil
+}
+
+func (s *server) Leave(ctx context.Context, in *pb.LeaveMessage) (*pb.EmptyReturn, error) {
+	id := in.GetId()
+	name := s.participants[int(id)].name
+
+	delete(s.participants, int(id))
+
+	message := fmt.Sprintf("> %s - left the chat", name)
+	log.Println(message)
+
+	for _, part := range s.participants {
+		if part.streamWrap.messageStream != nil {
+			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: message, LTime: 0})
 		}
 	}
 

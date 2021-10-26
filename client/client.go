@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	pb "github.com/axrez/disys-mini-project-2"
@@ -19,7 +22,9 @@ type Participant struct {
 const address = "localhost:50051"
 
 func main() {
-	name := GetParticipantName()
+	reader := bufio.NewReader(os.Stdin)
+
+	name := GetParticipantName(reader)
 	var lTime int32 = 1
 
 	// Set up a connection to the server.
@@ -39,23 +44,30 @@ func main() {
 	log.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
 
 	go Listen(SubscribeChat(c, ctx, p, 1))
-	go Chat(c, ctx, p, lTime)
-	for true {
-	}
+	Chat(c, ctx, p, lTime, reader)
 }
 
-func GetParticipantName() string {
-	var name string
+func GetParticipantName(r *bufio.Reader) string {
 	fmt.Print("Please type your name: ")
-	fmt.Scanln(&name)
+	rawName, _ := r.ReadString('\n')
+
+	name := strings.TrimSpace(rawName)
+
+	if len(name) == 0 {
+		fmt.Println("The name must be more than 0 characters")
+		return GetParticipantName(r)
+	}
+
 	return name
 }
 
-func GetParicipantTextMessage() string {
-	var textMessage string
+func GetParicipantTextMessage(r *bufio.Reader) string {
 	fmt.Print("Please type a message: ")
-	fmt.Scanln(&textMessage)
-	return textMessage
+
+	rawMessage, _ := r.ReadString('\n')
+	message := strings.TrimSpace(rawMessage)
+
+	return message
 }
 
 func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant {
@@ -105,11 +117,12 @@ func LeaveChat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime 
 	if err != nil {
 		log.Fatalf("%s failed to leave chat: %v", p.Name, err)
 	}
+	os.Exit(0)
 }
 
-func Chat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) {
-	for true {
-		text := GetParicipantTextMessage()
+func Chat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32, r *bufio.Reader) {
+	for {
+		text := GetParicipantTextMessage(r)
 		if text == "\\leave" {
 			LeaveChat(c, ctx, p, lTime)
 		} else {
@@ -119,7 +132,7 @@ func Chat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32
 }
 
 func Listen(stream pb.ChittyChat_SubscribeClient) {
-	for true {
+	for {
 		message, err := stream.Recv()
 		if err == io.EOF {
 			time.Sleep(1 * time.Second)
