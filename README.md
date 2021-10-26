@@ -2,9 +2,9 @@
 
 todo:
 
-- [ ] `ctrl-c` handling
+- [x] `ctrl-c` handling
 - [ ] Prompt?
 - [ ] Clocks
-- [ ] Ouptut server logs into file
+- [x] Ouptut server logs into file
 - [ ] Docker?!?
 - [ ] Repport
