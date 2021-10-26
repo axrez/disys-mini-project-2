@@ -63,8 +63,6 @@ func GetParticipantName(r *bufio.Reader) string {
 }
 
 func GetParicipantTextMessage(r *bufio.Reader) string {
-	fmt.Print("Please type a message: ")
-
 	rawMessage, _ := r.ReadString('\n')
 	message := strings.TrimSpace(rawMessage)
 
