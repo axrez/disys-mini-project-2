@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"os"
+	"time"
 
 	pb "github.com/axrez/disys-mini-project-2"
 	"google.golang.org/grpc"
@@ -95,7 +98,15 @@ func (s *server) Leave(ctx context.Context, in *pb.LeaveMessage) (*pb.EmptyRetur
 	return &pb.EmptyReturn{}, nil
 }
 
-func main() {
+func main() { 
+	// Make log output to both file and stdout
+	logFile, err := os.OpenFile("output/log" + time.Now().Format("01-02-2006") + ".txt", os.O_CREATE | os.O_APPEND | os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
+	}
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
+
 	lis, err := net.Listen("tcp", port)
 
 	if err != nil {
