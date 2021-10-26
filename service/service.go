@@ -54,7 +54,7 @@ func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMes
 			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: message, LTime: 0})
 		}
 	}
-	return &pb.JoinReplyMessage{Id: int32(newId), Name: in.GetName(), LTime: s.lTime}, nil
+	return &pb.JoinReplyMessage{Id: int32(newId), LTime: s.lTime}, nil
 }
 
 func (s *server) Subscribe(in *pb.SubscribeMessage, stream pb.ChittyChat_SubscribeServer) error {

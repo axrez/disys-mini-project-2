@@ -16,11 +16,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Participant struct {
-	Name string
-	Id   int32
-}
-
 const address = "localhost:50051"
 
 func main() {
@@ -41,14 +36,14 @@ func main() {
 
 	defer cancel()
 
-	p := JoinChat(c, ctx, name, lTime)
+	id := JoinChat(c, ctx, name, lTime)
 
 	log.Println("Welcome to chittychat! Write '\\leave' to leave the chat")
-	log.Printf("Participant received with ID: %d and Name: %s \n", p.Id, p.Name)
+	log.Printf("ID received: %d\n", id)
 
-	SetupCloseHandler(c, ctx, p, lTime)
-	go Listen(SubscribeChat(c, ctx, p, 1))
-	Chat(c, ctx, p, lTime, reader)
+	SetupCloseHandler(c, ctx, id, lTime)
+	go Listen(SubscribeChat(c, ctx, id, 1))
+	Chat(c, ctx, id, lTime, reader)
 }
 
 func GetParticipantName(r *bufio.Reader) string {
@@ -72,7 +67,7 @@ func GetParicipantTextMessage(r *bufio.Reader) string {
 	return message
 }
 
-func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) Participant {
+func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) int32 {
 	message := &pb.JoinMessage{
 		Name:  name,
 		LTime: lTime,
@@ -81,26 +76,26 @@ func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int
 	if err != nil {
 		log.Fatalf("%s failed to join: %v", name, err)
 	}
-	return Participant{Id: r.GetId(), Name: r.GetName()}
+	return r.GetId()
 }
 
-func SubscribeChat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) pb.ChittyChat_SubscribeClient {
+func SubscribeChat(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32) pb.ChittyChat_SubscribeClient {
 	message := &pb.SubscribeMessage{
-		Id:    p.Id,
+		Id:    id,
 		LTime: lTime,
 	}
 	stream, err := c.Subscribe(ctx, message)
 	if err != nil {
-		log.Fatalf("%s failed to subscribe to chat: %v", p.Name, err)
+		log.Fatalf("Participant with ID: %d failed to subscribe to chat: %v", id, err)
 	}
 
 	return stream
 }
 
-func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, p Participant, lTime int32) {
+func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, id int32, lTime int32) {
 	message := &pb.PublishMessage{
 		Message: textMessage,
-		Id:      p.Id,
+		Id:      id,
 		LTime:   lTime,
 	}
 	_, err := c.Publish(ctx, message)
@@ -109,25 +104,25 @@ func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage stri
 	}
 }
 
-func LeaveChat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) {
+func LeaveChat(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32) {
 	message := &pb.LeaveMessage{
-		Id:    p.Id,
+		Id:    id,
 		LTime: lTime,
 	}
 	_, err := c.Leave(ctx, message)
 	if err != nil {
-		log.Fatalf("%s failed to leave chat: %v", p.Name, err)
+		log.Fatalf("Participant with ID: %d failed failed to leave chat:: %v", id, err)
 	}
 	os.Exit(0)
 }
 
-func Chat(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32, r *bufio.Reader) {
+func Chat(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32, r *bufio.Reader) {
 	for {
 		text := GetParicipantTextMessage(r)
 		if text == "\\leave" {
-			LeaveChat(c, ctx, p, lTime)
+			LeaveChat(c, ctx, id, lTime)
 		} else {
-			PublishMessage(c, ctx, text, p, lTime)
+			PublishMessage(c, ctx, text, id, lTime)
 		}
 	}
 }
@@ -146,11 +141,11 @@ func Listen(stream pb.ChittyChat_SubscribeClient) {
 	}
 }
 
-func SetupCloseHandler(c pb.ChittyChatClient, ctx context.Context, p Participant, lTime int32) {
+func SetupCloseHandler(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32) {
 	channel := make(chan os.Signal)
 	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-channel
-		LeaveChat(c, ctx, p, lTime)
+		LeaveChat(c, ctx, id, lTime)
 	}()
 }
