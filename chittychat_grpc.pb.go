@@ -18,10 +18,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChittyChatClient interface {
-	Publish(ctx context.Context, in *PublishMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
+	Publish(ctx context.Context, in *PublishMessage, opts ...grpc.CallOption) (*TimeMessage, error)
 	Subscribe(ctx context.Context, in *SubscribeMessage, opts ...grpc.CallOption) (ChittyChat_SubscribeClient, error)
 	Join(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (*JoinReplyMessage, error)
-	Leave(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*EmptyReturn, error)
+	Leave(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*TimeMessage, error)
 }
 
 type chittyChatClient struct {
@@ -32,8 +32,8 @@ func NewChittyChatClient(cc grpc.ClientConnInterface) ChittyChatClient {
 	return &chittyChatClient{cc}
 }
 
-func (c *chittyChatClient) Publish(ctx context.Context, in *PublishMessage, opts ...grpc.CallOption) (*EmptyReturn, error) {
-	out := new(EmptyReturn)
+func (c *chittyChatClient) Publish(ctx context.Context, in *PublishMessage, opts ...grpc.CallOption) (*TimeMessage, error) {
+	out := new(TimeMessage)
 	err := c.cc.Invoke(ctx, "/main.ChittyChat/Publish", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -82,8 +82,8 @@ func (c *chittyChatClient) Join(ctx context.Context, in *JoinMessage, opts ...gr
 	return out, nil
 }
 
-func (c *chittyChatClient) Leave(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*EmptyReturn, error) {
-	out := new(EmptyReturn)
+func (c *chittyChatClient) Leave(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*TimeMessage, error) {
+	out := new(TimeMessage)
 	err := c.cc.Invoke(ctx, "/main.ChittyChat/Leave", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -95,10 +95,10 @@ func (c *chittyChatClient) Leave(ctx context.Context, in *LeaveMessage, opts ...
 // All implementations must embed UnimplementedChittyChatServer
 // for forward compatibility
 type ChittyChatServer interface {
-	Publish(context.Context, *PublishMessage) (*EmptyReturn, error)
+	Publish(context.Context, *PublishMessage) (*TimeMessage, error)
 	Subscribe(*SubscribeMessage, ChittyChat_SubscribeServer) error
 	Join(context.Context, *JoinMessage) (*JoinReplyMessage, error)
-	Leave(context.Context, *LeaveMessage) (*EmptyReturn, error)
+	Leave(context.Context, *LeaveMessage) (*TimeMessage, error)
 	mustEmbedUnimplementedChittyChatServer()
 }
 
@@ -106,7 +106,7 @@ type ChittyChatServer interface {
 type UnimplementedChittyChatServer struct {
 }
 
-func (UnimplementedChittyChatServer) Publish(context.Context, *PublishMessage) (*EmptyReturn, error) {
+func (UnimplementedChittyChatServer) Publish(context.Context, *PublishMessage) (*TimeMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
 func (UnimplementedChittyChatServer) Subscribe(*SubscribeMessage, ChittyChat_SubscribeServer) error {
@@ -115,7 +115,7 @@ func (UnimplementedChittyChatServer) Subscribe(*SubscribeMessage, ChittyChat_Sub
 func (UnimplementedChittyChatServer) Join(context.Context, *JoinMessage) (*JoinReplyMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
-func (UnimplementedChittyChatServer) Leave(context.Context, *LeaveMessage) (*EmptyReturn, error) {
+func (UnimplementedChittyChatServer) Leave(context.Context, *LeaveMessage) (*TimeMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Leave not implemented")
 }
 func (UnimplementedChittyChatServer) mustEmbedUnimplementedChittyChatServer() {}

@@ -14,15 +14,20 @@ import (
 
 	pb "github.com/axrez/disys-mini-project-2"
 	"google.golang.org/grpc"
+
+
+	utils "github.com/axrez/disys-mini-project-2/utils"
 )
 
 const address = "localhost:50051"
+
+var lTime []int32
+var id int32
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
 	name := GetParticipantName(reader)
-	var lTime int32 = 1
 
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
@@ -36,14 +41,15 @@ func main() {
 
 	defer cancel()
 
-	id := JoinChat(c, ctx, name, lTime)
+	id, lTime = JoinChat(c, ctx, name)
+	utils.IncrementLTime(id, &lTime)
 
 	log.Println("Welcome to chittychat! Write '\\leave' to leave the chat")
 	log.Printf("ID received: %d\n", id)
 
-	SetupCloseHandler(c, ctx, id, lTime)
-	go Listen(SubscribeChat(c, ctx, id, 1))
-	Chat(c, ctx, id, lTime, reader)
+	SetupCloseHandler(c, ctx)
+	go Listen(SubscribeChat(c, ctx))
+	Chat(c, ctx, reader)
 }
 
 func GetParticipantName(r *bufio.Reader) string {
@@ -67,19 +73,19 @@ func GetParicipantTextMessage(r *bufio.Reader) string {
 	return message
 }
 
-func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string, lTime int32) int32 {
+func JoinChat(c pb.ChittyChatClient, ctx context.Context, name string) (int32, []int32) {
 	message := &pb.JoinMessage{
 		Name:  name,
-		LTime: lTime,
 	}
 	r, err := c.Join(ctx, message)
 	if err != nil {
 		log.Fatalf("%s failed to join: %v", name, err)
 	}
-	return r.GetId()
+	return r.GetId(), r.GetLTime()
 }
 
-func SubscribeChat(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32) pb.ChittyChat_SubscribeClient {
+func SubscribeChat(c pb.ChittyChatClient, ctx context.Context) pb.ChittyChat_SubscribeClient {
+	utils.IncrementLTime(id, &lTime)	
 	message := &pb.SubscribeMessage{
 		Id:    id,
 		LTime: lTime,
@@ -92,60 +98,67 @@ func SubscribeChat(c pb.ChittyChatClient, ctx context.Context, id int32, lTime i
 	return stream
 }
 
-func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string, id int32, lTime int32) {
+func PublishMessage(c pb.ChittyChatClient, ctx context.Context, textMessage string) {
+	utils.IncrementLTime(id, &lTime)	
 	message := &pb.PublishMessage{
 		Message: textMessage,
 		Id:      id,
 		LTime:   lTime,
 	}
-	_, err := c.Publish(ctx, message)
+	r, err := c.Publish(ctx, message)
 	if err != nil {
 		log.Fatalf("Failed to publish message: %v", err)
 	}
+
+	utils.CalcNextLTime(id, &lTime, &r.LTime)
 }
 
-func LeaveChat(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32) {
+func LeaveChat(c pb.ChittyChatClient, ctx context.Context) {
+	utils.IncrementLTime(id, &lTime)	
 	message := &pb.LeaveMessage{
 		Id:    id,
 		LTime: lTime,
 	}
-	_, err := c.Leave(ctx, message)
+	r, err := c.Leave(ctx, message)
 	if err != nil {
 		log.Fatalf("Participant with ID: %d failed failed to leave chat:: %v", id, err)
 	}
+
+	utils.CalcNextLTime(id, &lTime, &r.LTime)
 	os.Exit(0)
 }
 
-func Chat(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32, r *bufio.Reader) {
+func Chat(c pb.ChittyChatClient, ctx context.Context, r *bufio.Reader) {
 	for {
 		text := GetParicipantTextMessage(r)
 		if text == "\\leave" {
-			LeaveChat(c, ctx, id, lTime)
+			LeaveChat(c, ctx)
 		} else {
-			PublishMessage(c, ctx, text, id, lTime)
+			PublishMessage(c, ctx, text)
 		}
 	}
 }
 
 func Listen(stream pb.ChittyChat_SubscribeClient) {
 	for {
-		message, err := stream.Recv()
+		r, err := stream.Recv()
 		if err == io.EOF {
 			time.Sleep(1 * time.Second)
 		} else if err != nil {
 			log.Fatalf("Failed to receive message: %v", err)
 		}
-		if message != nil {
-			log.Println(message.Message)
+		if r != nil {
+			utils.CalcNextLTime(id, &lTime, &r.LTime)
+			log.Println(r.Message + utils.LTimeToString(lTime))
 		}
 	}
 }
 
-func SetupCloseHandler(c pb.ChittyChatClient, ctx context.Context, id int32, lTime int32) {
+func SetupCloseHandler(c pb.ChittyChatClient, ctx context.Context) {
 	channel := make(chan os.Signal)
 	signal.Notify(channel, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-channel
-		LeaveChat(c, ctx, id, lTime)
+		LeaveChat(c, ctx)
 	}()
 }

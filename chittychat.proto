@@ -4,41 +4,44 @@ package main;
 option go_package = "github.com/axrez/disys-mini-project-2;disys_mini_project_2";
 
 service ChittyChat {
-    rpc Publish (PublishMessage) returns (EmptyReturn);
+    rpc Publish (PublishMessage) returns (TimeMessage);
     rpc Subscribe (SubscribeMessage) returns (stream BroadcastMessage);
     rpc Join (JoinMessage) returns (JoinReplyMessage);
-    rpc Leave (LeaveMessage) returns (EmptyReturn);
+    rpc Leave (LeaveMessage) returns (TimeMessage);
 }
 
 message PublishMessage {
     string message = 1;
     int32 id = 2;
-    int32 lTime = 3;
+    repeated int32 lTime = 3;
 }
 
 message BroadcastMessage {
     string message = 1;
-    int32 lTime = 2;
+    repeated int32 lTime = 2;
 }
 
 message SubscribeMessage {
     int32 id = 1;
-    int32 lTime = 2;
+    repeated int32 lTime = 2;
 }
 
 message JoinMessage {
     string name = 1;
-    int32 lTime = 2;
 }
 
 message LeaveMessage {
     int32 id = 1;
-    int32 lTime = 2;
+    repeated int32 lTime = 2;
 }
 
-message EmptyReturn {}
+message TimeMessage {
+  repeated int32 lTime = 1;
+}
+
+message EmptyMessage {}
 
 message JoinReplyMessage {
     int32 id = 1;
-    int32 lTime = 3;
+    repeated int32 lTime = 3;
 }

@@ -29,14 +29,15 @@ type participant struct {
 
 type server struct {
 	pb.UnimplementedChittyChatServer
-	lTime        int32
+	lTime        []int32
 	participants map[int]participant
 }
 
 func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMessage, error) {
-	utils.CalcNextLTime(&s.lTime, &in.LTime)
+	clientLTime := append(s.lTime, 1)
+	utils.CalcNextLTime(0,&s.lTime, &clientLTime)
 
-	newId := len(s.participants)
+	newId := len(s.participants) + 1
 
 	s.participants[newId] = participant{
 		name: in.GetName(),
@@ -47,13 +48,15 @@ func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMes
 	}
 
 	message := fmt.Sprintf("> %s - Joined the chat", in.GetName())
-	log.Println(message)
+	log.Println(message + utils.LTimeToString(s.lTime))
 
 	for _, part := range s.participants {
 		if part.streamWrap.messageStream != nil {
-			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: message, LTime: 0})
+			utils.IncrementLTime(0, &s.lTime)
+			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: message, LTime: s.lTime})
 		}
 	}
+
 	return &pb.JoinReplyMessage{Id: int32(newId), LTime: s.lTime}, nil
 }
 
@@ -68,34 +71,36 @@ func (s *server) Subscribe(in *pb.SubscribeMessage, stream pb.ChittyChat_Subscri
 	return <-streamWrap.error
 }
 
-func (s *server) Publish(ctx context.Context, in *pb.PublishMessage) (*pb.EmptyReturn, error) {
+func (s *server) Publish(ctx context.Context, in *pb.PublishMessage) (*pb.TimeMessage, error) {
+	utils.CalcNextLTime(0,&s.lTime, &in.LTime)
 	for _, part := range s.participants {
 		if part.streamWrap.messageStream != nil {
-			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: in.GetMessage(), LTime: 0})
+			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: in.GetMessage(), LTime: s.lTime})
 		}
 	}
 
-	log.Printf("%s: %s", s.participants[int(in.Id)].name, in.GetMessage())
+	log.Printf("%s: %s %s", s.participants[int(in.Id)].name, in.GetMessage(), utils.LTimeToString(s.lTime))
 
-	return &pb.EmptyReturn{}, nil
+	return &pb.TimeMessage{LTime: s.lTime}, nil
 }
 
-func (s *server) Leave(ctx context.Context, in *pb.LeaveMessage) (*pb.EmptyReturn, error) {
+func (s *server) Leave(ctx context.Context, in *pb.LeaveMessage) (*pb.TimeMessage, error) {
+	utils.CalcNextLTime(0,&s.lTime, &in.LTime)
 	id := in.GetId()
 	name := s.participants[int(id)].name
 
 	delete(s.participants, int(id))
 
 	message := fmt.Sprintf("> %s - left the chat", name)
-	log.Println(message)
+	log.Println(message + utils.LTimeToString(s.lTime))
 
 	for _, part := range s.participants {
 		if part.streamWrap.messageStream != nil {
-			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: message, LTime: 0})
+			part.streamWrap.messageStream.SendMsg(&pb.BroadcastMessage{Message: message, LTime: s.lTime})
 		}
 	}
 
-	return &pb.EmptyReturn{}, nil
+	return &pb.TimeMessage{LTime: s.lTime}, nil
 }
 
 func main() { 
@@ -115,7 +120,7 @@ func main() {
 
 	s := grpc.NewServer()
 
-	pb.RegisterChittyChatServer(s, &server{lTime: 0, participants: make(map[int]participant)})
+	pb.RegisterChittyChatServer(s, &server{lTime: make([]int32,1), participants: make(map[int]participant)})
 
 	log.Printf("server listening at: %v", lis.Addr())
 
