@@ -6,8 +6,8 @@ import "fmt"
 func CalcNextLTime(id int32,ownLTime *[]int32, receivedLTime *[]int32) {
 	maxLen := int(math.Max(float64(len(*ownLTime)), float64(len(*receivedLTime))))
 	newLTime := []int32{}
-	for i := 0; i < int(maxLen); i++ {
-		if i < len(*ownLTime)-1 && i < len(*receivedLTime) {
+	for i := 0; i < maxLen; i++ {
+		if i < len(*ownLTime) && i < len(*receivedLTime) {
 			newLTime = append(newLTime, int32(math.Max(float64((*ownLTime)[i]), float64((*receivedLTime)[i]))))
 		} else if i < len(*ownLTime) {
 			newLTime = append(newLTime, (*ownLTime)[i])
