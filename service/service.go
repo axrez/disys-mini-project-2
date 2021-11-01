@@ -31,15 +31,15 @@ type server struct {
 	pb.UnimplementedChittyChatServer
 	lTime        []int32
 	participants map[int]participant
+	latestID int32
 }
 
 func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMessage, error) {
 	clientLTime := append(s.lTime, 1)
 	utils.CalcNextLTime(0,&s.lTime, &clientLTime)
 
-	newId := len(s.participants) + 1
-
-	s.participants[newId] = participant{
+	s.latestID++
+	s.participants[int(s.latestID)] = participant{
 		name: in.GetName(),
 		streamWrap: &streamWrapper{
 			messageStream: nil,
@@ -57,7 +57,7 @@ func (s *server) Join(ctx context.Context, in *pb.JoinMessage) (*pb.JoinReplyMes
 		}
 	}
 
-	return &pb.JoinReplyMessage{Id: int32(newId), LTime: s.lTime}, nil
+	return &pb.JoinReplyMessage{Id: s.latestID, LTime: s.lTime}, nil
 }
 
 func (s *server) Subscribe(in *pb.SubscribeMessage, stream pb.ChittyChat_SubscribeServer) error {
@@ -120,7 +120,7 @@ func main() {
 
 	s := grpc.NewServer()
 
-	pb.RegisterChittyChatServer(s, &server{lTime: make([]int32,1), participants: make(map[int]participant)})
+	pb.RegisterChittyChatServer(s, &server{lTime: make([]int32,1), participants: make(map[int]participant), latestID: 0})
 
 	log.Printf("server listening at: %v", lis.Addr())
 
