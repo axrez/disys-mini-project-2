@@ -1,10 +1,17 @@
-# Mini project 2
+# Mini Project 2
 
-todo:
+### How to run
 
-- [x] `ctrl-c` handling
-- [x] ~~Prompt?~~
-- [x] Clocks
-- [x] Ouptut server logs into file
-- [ ] Docker?!?
-- [ ] Repport
+`cd` into the `service` directory and start the server:
+
+```bash
+$ go run .
+```
+
+Then in another window `cd` into the `client` directory and run the client:
+
+```bash
+$ go run .
+```
+
+Run as many client as you want with the above procedure
