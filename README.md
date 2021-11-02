@@ -14,4 +14,4 @@ Then in another window `cd` into the `client` directory and run the client:
 $ go run .
 ```
 
-Run as many client as you want with the above procedure
+Run as many clients as you want with the above procedure
